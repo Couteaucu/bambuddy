@@ -4,6 +4,7 @@
     "local>Renovate/Renovate",
     "config:recommended"
   ],
+  "enabledManagers": ["custom.regex"],
   "customManagers": [
     {
       "customType": "regex",
