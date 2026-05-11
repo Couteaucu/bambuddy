@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   upstream-sync:
@@ -40,13 +41,10 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create upstream branch and merge
+      - name: Create upstream branch
         if: steps.decide.outputs.skip == 'false'
         run: |
-          git config user.name "Gitea Actions"
-          git config user.email "actions@gitea.revisionnet.net"
-          git checkout -b "upstream/v${{ steps.decide.outputs.version }}"
-          git merge --no-edit "v${{ steps.decide.outputs.version }}"
+          git checkout -b "upstream/v${{ steps.decide.outputs.version }}" "v${{ steps.decide.outputs.version }}"
           git push origin "upstream/v${{ steps.decide.outputs.version }}"
 
       - name: Open pull request
