@@ -1,0 +1,51 @@
+---
+name: upstream-sync
+
+on:
+  push:
+    branches:
+      - 'renovate/**'
+
+jobs:
+  upstream-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read APP_VERSION
+        id: version
+        run: |
+          version=$(grep 'APP_VERSION' backend/app/core/config.py | grep -oP '"\K[^"]+')
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/maziggy/bambuddy.git
+
+      - name: Fetch upstream tag
+        run: git fetch upstream "refs/tags/v${{ steps.version.outputs.value }}:refs/tags/v${{ steps.version.outputs.value }}"
+
+      - name: Check if upstream already merged
+        id: check
+        run: |
+          if git merge-base --is-ancestor "v${{ steps.version.outputs.value }}" HEAD; then
+            echo "already_merged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_merged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream
+        if: steps.check.outputs.already_merged == 'false'
+        run: |
+          git config user.name "Gitea Actions"
+          git config user.email "actions@gitea.revisionnet.net"
+          git merge --no-edit "v${{ steps.version.outputs.value }}"
+
+      - name: Push
+        if: steps.check.outputs.already_merged == 'false'
+        run: git push origin "HEAD:${{ github.ref_name }}"
