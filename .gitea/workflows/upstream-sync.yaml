@@ -43,21 +43,51 @@ jobs:
           fi
 
       - name: Create upstream branch
+        id: branch
         if: steps.decide.outputs.skip == 'false'
         run: |
-          git checkout -b "upstream/v${{ steps.decide.outputs.version }}" "v${{ steps.decide.outputs.version }}"
-          git push origin "upstream/v${{ steps.decide.outputs.version }}"
+          version="${{ steps.decide.outputs.version }}"
+          git config user.name "Gitea Actions"
+          git config user.email "actions@gitea.revisionnet.net"
+          git checkout -b "upstream/v${version}"
+
+          if git merge --no-edit "v${version}"; then
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+          else
+            conflicts=$(git diff --name-only --diff-filter=U)
+            non_lockfile=$(echo "$conflicts" | grep -v '^frontend/package-lock\.json$')
+
+            if [ -z "$non_lockfile" ]; then
+              # Only package-lock.json conflicted — take upstream's and continue
+              git checkout --theirs frontend/package-lock.json
+              git add frontend/package-lock.json
+              git commit --no-edit
+              echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            else
+              # Real code conflicts — abort, reset branch to upstream tag
+              git merge --abort
+              git reset --hard "v${version}"
+              echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+          git push origin "upstream/v${version}"
 
       - name: Open pull request
         if: steps.decide.outputs.skip == 'false'
         run: |
+          version="${{ steps.decide.outputs.version }}"
+
+          if [ "${{ steps.branch.outputs.has_conflicts }}" = "true" ]; then
+            title="chore: merge upstream v${version} (conflicts)"
+            body="Upstream merge of [maziggy/bambuddy](https://github.com/maziggy/bambuddy) v${version}.\n\n⚠️ Real merge conflicts detected — resolve locally before merging."
+          else
+            title="chore: merge upstream v${version}"
+            body="Upstream merge of [maziggy/bambuddy](https://github.com/maziggy/bambuddy) v${version}.\n\nReview changes before merging."
+          fi
+
           curl -sf -X POST \
             "https://gitea.revisionnet.net/api/v1/repos/Revision/BamBuddy/pulls" \
             -H "Authorization: token ${{ secrets.TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"title\": \"chore: merge upstream v${{ steps.decide.outputs.version }}\",
-              \"head\": \"upstream/v${{ steps.decide.outputs.version }}\",
-              \"base\": \"main\",
-              \"body\": \"Automated upstream merge of [maziggy/bambuddy](https://github.com/maziggy/bambuddy) v${{ steps.decide.outputs.version }}.\\n\\nThis PR brings in all upstream changes for this release. Review for conflicts before merging.\"
-            }"
+            -d "{\"title\": \"${title}\", \"head\": \"upstream/v${version}\", \"base\": \"main\", \"body\": \"${body}\"}"
