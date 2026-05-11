@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -52,7 +53,7 @@ jobs:
         run: |
           curl -sf -X POST \
             "https://gitea.revisionnet.net/api/v1/repos/Revision/BamBuddy/pulls" \
-            -H "Authorization: token ${{ secrets.TOKEN }}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{
               \"title\": \"chore: merge upstream v${{ steps.decide.outputs.version }}\",
