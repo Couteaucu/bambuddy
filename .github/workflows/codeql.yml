@@ -1,5 +1,15 @@
-# Upstream workflow — kept to avoid merge conflicts, disabled in this Gitea fork.
-on: workflow_dispatch
+name: "CodeQL"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
 
 jobs:
   analyze:

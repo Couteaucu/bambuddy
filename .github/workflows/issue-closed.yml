@@ -1,5 +1,11 @@
-# Upstream workflow — kept to avoid merge conflicts, disabled in this Gitea fork.
-on: workflow_dispatch
+name: Clean up closed issues
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
 
 jobs:
   remove-labels:

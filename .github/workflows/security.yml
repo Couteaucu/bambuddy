@@ -1,5 +1,39 @@
-# Upstream workflow — kept to avoid merge conflicts, disabled in this Gitea fork.
-on: workflow_dispatch
+name: Security Audit
+
+on:
+  schedule:
+    # Run weekly on Monday at 6:00 UTC
+    - cron: '0 6 * * 1'
+  push:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'spoolbuddy/**'
+      - 'Dockerfile'
+      - 'docker-compose*.yml'
+      - 'requirements.txt'
+      - 'frontend/package*.json'
+      - '.github/workflows/security.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'spoolbuddy/**'
+      - 'Dockerfile'
+      - 'docker-compose*.yml'
+      - 'requirements.txt'
+      - 'frontend/package*.json'
+      - '.github/workflows/security.yml'
+  workflow_dispatch:
+    # Allow manual trigger
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '22'
+
+# Default permissions for all jobs
+permissions:
+  contents: read
 
 jobs:
   bandit:

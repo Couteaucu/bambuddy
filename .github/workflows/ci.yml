@@ -1,5 +1,28 @@
-# Upstream workflow — kept to avoid merge conflicts, disabled in this Gitea fork.
-on: workflow_dispatch
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    # Run on PRs targeting main, but skip for repo owner (runs local tests)
+
+# Skip CI for PRs authored by repo owner (they run tests locally)
+# Uses PR author instead of triggering actor so rebasing by owner doesn't skip CI
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '22'
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimum permissions for all jobs
+permissions:
+  contents: read
 
 jobs:
   # ============================================================================

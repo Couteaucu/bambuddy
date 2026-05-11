@@ -1,5 +1,11 @@
-# Upstream workflow — kept to avoid merge conflicts, disabled in this Gitea fork.
-on: workflow_dispatch
+name: Close stale issues
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+
+permissions:
+  issues: write
 
 jobs:
   stale:
