@@ -2,10 +2,15 @@
 name: Build BamBuddy Image
 
 on:
-  push:
-    tags:
-      - 'v*-rnet.*'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to build (e.g. 0.2.4-dev.1)'
+        required: true
 
 env:
   REGISTRY: gitea.revisionnet.net
@@ -13,14 +18,32 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'upstream/v'))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "push_latest=false" >> "$GITHUB_OUTPUT"
+          else
+            branch="${{ github.event.pull_request.head.ref }}"
+            version="${branch#upstream/v}"
+            git config user.name "Gitea Actions"
+            git config user.email "actions@gitea.revisionnet.net"
+            git tag "v${version}-rnet.1"
+            git push origin "v${version}-rnet.1"
+            echo "value=${version}-rnet.1" >> "$GITHUB_OUTPUT"
+            echo "push_latest=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -32,18 +55,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.TOKEN }}
 
-      - name: Determine image version
-        id: version
-        run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            # e.g. v0.2.3.2-rnet.2 -> 0.2.3.2-rnet.2
-            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          else
-            # Renovate PR merge: read APP_VERSION from source, append -rnet.1
-            APP_VERSION=$(grep 'APP_VERSION' backend/app/core/config.py | grep -oP '"\K[^"]+')
-            echo "value=${APP_VERSION}-rnet.1" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -52,8 +63,9 @@ jobs:
           push: true
           provenance: false
           sbom: false
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.version.outputs.value }}
-            ${{ env.IMAGE }}:latest
+          tags: >-
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}${{
+              steps.tag.outputs.push_latest == 'true' && format(',{0}:latest', env.IMAGE) || ''
+            }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max,ignore-error=true
