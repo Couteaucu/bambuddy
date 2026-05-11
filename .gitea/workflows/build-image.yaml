@@ -3,16 +3,8 @@ name: Build BamBuddy Image
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*-rnet.*'
-    paths:
-      - 'Dockerfile'
-      - 'backend/**'
-      - 'frontend/**'
-      - 'requirements.txt'
-      - '.gitea/workflows/build-image.yaml'
   workflow_dispatch:
 
 env:

@@ -4,7 +4,7 @@ name: upstream-sync
 on:
   push:
     branches:
-      - 'renovate/**'
+      - main
 
 jobs:
   upstream-sync:
@@ -18,34 +18,47 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read APP_VERSION
-        id: version
+      - name: Determine whether sync is needed
+        id: decide
         run: |
           version=$(grep 'APP_VERSION' backend/app/core/config.py | grep -oP '"\K[^"]+')
-          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Add upstream remote
-        run: git remote add upstream https://github.com/maziggy/bambuddy.git
-
-      - name: Fetch upstream tag
-        run: git fetch upstream "refs/tags/v${{ steps.version.outputs.value }}:refs/tags/v${{ steps.version.outputs.value }}"
-
-      - name: Check if upstream already merged
-        id: check
-        run: |
-          if git merge-base --is-ancestor "v${{ steps.version.outputs.value }}" HEAD; then
-            echo "already_merged=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "already_merged=false" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code origin "refs/heads/upstream/v${version}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "upstream/v${version} branch already exists — skipping"
+            exit 0
           fi
 
-      - name: Merge upstream
-        if: steps.check.outputs.already_merged == 'false'
+          git remote add upstream https://github.com/maziggy/bambuddy.git
+          git fetch upstream "refs/tags/v${version}:refs/tags/v${version}"
+
+          if git merge-base --is-ancestor "v${version}" HEAD; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "upstream v${version} already present in main — skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create upstream branch and merge
+        if: steps.decide.outputs.skip == 'false'
         run: |
           git config user.name "Gitea Actions"
           git config user.email "actions@gitea.revisionnet.net"
-          git merge --no-edit "v${{ steps.version.outputs.value }}"
+          git checkout -b "upstream/v${{ steps.decide.outputs.version }}"
+          git merge --no-edit "v${{ steps.decide.outputs.version }}"
+          git push origin "upstream/v${{ steps.decide.outputs.version }}"
 
-      - name: Push
-        if: steps.check.outputs.already_merged == 'false'
-        run: git push origin "HEAD:${{ github.ref_name }}"
+      - name: Open pull request
+        if: steps.decide.outputs.skip == 'false'
+        run: |
+          curl -sf -X POST \
+            "https://gitea.revisionnet.net/api/v1/repos/Revision/BamBuddy/pulls" \
+            -H "Authorization: token ${{ secrets.TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"title\": \"chore: merge upstream v${{ steps.decide.outputs.version }}\",
+              \"head\": \"upstream/v${{ steps.decide.outputs.version }}\",
+              \"base\": \"main\",
+              \"body\": \"Automated upstream merge of [maziggy/bambuddy](https://github.com/maziggy/bambuddy) v${{ steps.decide.outputs.version }}.\\n\\nThis PR brings in all upstream changes for this release. Review for conflicts before merging.\"
+            }"
