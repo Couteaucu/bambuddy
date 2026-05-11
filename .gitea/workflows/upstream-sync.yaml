@@ -51,7 +51,12 @@ jobs:
           git config user.email "actions@gitea.revisionnet.net"
           git checkout -b "upstream/v${version}"
 
-          if git merge --no-edit "v${version}"; then
+          set +e
+          git merge --no-edit "v${version}"
+          merge_exit=$?
+          set -e
+
+          if [ $merge_exit -eq 0 ]; then
             echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
           else
             conflicts=$(git diff --name-only --diff-filter=U)
