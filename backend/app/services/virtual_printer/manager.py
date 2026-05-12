@@ -387,16 +387,16 @@ class VirtualPrinterInstance:
                             from sqlalchemy import select as sa_select
 
                             from backend.app.models.color_catalog import ColorCatalogEntry
+
                             hex_lower_set = {
-                                r.get("color", "").replace("#", "").lower()[:6]
-                                for r in requirements
-                                if r.get("color")
+                                r.get("color", "").replace("#", "").lower()[:6] for r in requirements if r.get("color")
                             }
                             catalog_map: dict[str, str] = {}
                             if hex_lower_set:
                                 cat_result = await db.execute(
-                                    sa_select(ColorCatalogEntry.hex_color, ColorCatalogEntry.color_name)
-                                    .where(ColorCatalogEntry.is_default == True)  # noqa: E712
+                                    sa_select(ColorCatalogEntry.hex_color, ColorCatalogEntry.color_name).where(
+                                        ColorCatalogEntry.is_default == True
+                                    )  # noqa: E712
                                 )
                                 for hex_color, color_name in cat_result:
                                     h = hex_color.replace("#", "").lower()[:6]
@@ -407,7 +407,8 @@ class VirtualPrinterInstance:
                                     "slot_id": r["slot_id"],
                                     "type": r.get("type", ""),
                                     "color": r.get("color", ""),
-                                    "color_name": catalog_map.get(r.get("color", "").replace("#", "").lower()[:6]) or None,
+                                    "color_name": catalog_map.get(r.get("color", "").replace("#", "").lower()[:6])
+                                    or None,
                                     "force_color_match": True,
                                 }
                                 for r in requirements

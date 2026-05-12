@@ -212,7 +212,9 @@ class PrintScheduler:
                             if _force_early:
                                 _missing_early = self._get_missing_force_color_slots(item.printer_id, _force_early)
                                 if _missing_early:
-                                    _reason_early = f"No matching material/color. Waiting on {', '.join(_missing_early)}"
+                                    _reason_early = (
+                                        f"No matching material/color. Waiting on {', '.join(_missing_early)}"
+                                    )
                                     if item.waiting_reason != _reason_early:
                                         item.waiting_reason = _reason_early
                                         await db.commit()
