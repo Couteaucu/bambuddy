@@ -260,6 +260,33 @@ class PrintScheduler:
                             busy_printers.add(item.printer_id)
                             continue
 
+                    # Force color match: hold the job if the assigned printer doesn't
+                    # have the required type+color loaded. Mirrors the check in
+                    # _find_idle_printer_for_model for model-based items.
+                    if item.filament_overrides:
+                        try:
+                            _fo = json.loads(item.filament_overrides)
+                            _force_overrides = [o for o in _fo if o.get("force_color_match")]
+                            if _force_overrides:
+                                _missing = self._get_missing_force_color_slots(item.printer_id, _force_overrides)
+                                if _missing:
+                                    _reason = f"No matching material/color. Waiting on {', '.join(_missing)}"
+                                    if item.waiting_reason != _reason:
+                                        item.waiting_reason = _reason
+                                        await db.commit()
+                                    logger.debug(
+                                        "Queue item %s: force-color hold on printer %s — %s",
+                                        item.id,
+                                        item.printer_id,
+                                        _missing,
+                                    )
+                                    continue
+                                elif item.waiting_reason and "Waiting on" in item.waiting_reason:
+                                    item.waiting_reason = None
+                                    await db.commit()
+                        except (json.JSONDecodeError, Exception):
+                            pass
+
                     # Check condition (previous print success)
                     if item.require_previous_success:
                         if not await self._check_previous_success(db, item):
