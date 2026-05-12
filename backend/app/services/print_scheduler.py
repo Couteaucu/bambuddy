@@ -698,28 +698,8 @@ class PrintScheduler:
         """
         status = printer_manager.get_status(printer_id)
 
-        # Build hex → color_name from ALL connected printers' AMS data.
-        # Used as a fallback when the stored override has no color_name
-        # (e.g. items auto-queued by a VP before this field was populated).
-        hex_to_name: dict[str, str] = {}
-        for ps in printer_manager.get_all_statuses().values():
-            for ams_unit in ps.raw_data.get("ams", []):
-                for tray in ams_unit.get("tray", []):
-                    c = tray.get("tray_color", "").replace("#", "").lower()[:6]
-                    name = tray.get("tray_sub_brands") or tray.get("tray_name")
-                    if c and name:
-                        hex_to_name[c] = name
-            for vt in ps.raw_data.get("vt_tray") or []:
-                c = (vt.get("tray_color", "") or "").replace("#", "").lower()[:6]
-                name = vt.get("tray_sub_brands") or vt.get("tray_name")
-                if c and name:
-                    hex_to_name[c] = name
-
         if not status:
-            return [
-                f"{o.get('type', '?')} ({o.get('color_name') or hex_to_name.get((o.get('color') or '').replace('#', '').lower()[:6]) or o.get('color', '?')})"
-                for o in force_overrides
-            ]
+            return [f"{o.get('type', '?')} ({o.get('color_name') or o.get('color', '?')})" for o in force_overrides]
 
         # Build set of loaded type+colour pairs from this printer's AMS
         loaded: set[tuple[str, str]] = set()
@@ -741,7 +721,7 @@ class PrintScheduler:
             o_type = _canonical_filament_type(o.get("type") or "")
             o_color = (o.get("color") or "").replace("#", "").lower()[:6]
             if (o_type, o_color) not in loaded:
-                color_label = o.get("color_name") or hex_to_name.get(o_color) or o.get("color", "?")
+                color_label = o.get("color_name") or o.get("color", "?")
                 missing.append(f"{o_type} ({color_label})")
         return missing
 
