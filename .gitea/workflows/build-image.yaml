@@ -95,19 +95,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          file="swarm/services/prod/bambuddy/base/deployment.yaml"
-          git -C swarm config user.name "Gitea Actions"
-          git -C swarm config user.email "actions@gitea.revisionnet.net"
-          git -C swarm checkout main
-          git -C swarm pull --ff-only origin main
+          cd swarm
+          git config user.name "Gitea Actions"
+          git config user.email "actions@gitea.revisionnet.net"
+          git checkout main
+          git pull --ff-only origin main
 
+          file="services/prod/bambuddy/base/deployment.yaml"
           sed -i -E "s|^([[:space:]]*image:[[:space:]]*gitea\.revisionnet\.net/revision/bambuddy:).*|\1${IMAGE_TAG}|" "$file"
 
-          if git -C swarm diff --quiet -- "$file"; then
+          if ! grep -q "revision/bambuddy:${IMAGE_TAG}" "$file"; then
+            echo "ERROR: sed did not match image line in $file" >&2
+            grep "bambuddy" "$file" >&2
+            exit 1
+          fi
+
+          if git diff --quiet -- "$file"; then
             echo "Swarm already points to ${IMAGE_TAG}; no update needed"
             exit 0
           fi
 
-          git -C swarm add "$file"
-          git -C swarm commit -m "chore: RNET-676 bump bambuddy to ${IMAGE_TAG}"
-          git -C swarm push origin main
+          git add "$file"
+          git commit -m "chore: RNET-676 bump bambuddy to ${IMAGE_TAG}"
+          git push origin main
+          echo "Swarm updated to ${IMAGE_TAG}"
