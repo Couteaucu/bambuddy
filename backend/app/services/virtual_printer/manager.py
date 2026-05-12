@@ -826,6 +826,7 @@ class VirtualPrinterManager:
                 or instance.remote_interface_ip != (vp.remote_interface_ip or "")
                 or instance.target_printer_id != vp.target_printer_id
                 or instance.auto_dispatch != vp.auto_dispatch
+                or instance.queue_force_color_match != vp.queue_force_color_match
             )
 
             if changed:
