@@ -395,8 +395,8 @@ class VirtualPrinterInstance:
                             if hex_lower_set:
                                 cat_result = await db.execute(
                                     sa_select(ColorCatalogEntry.hex_color, ColorCatalogEntry.color_name).where(
-                                        ColorCatalogEntry.is_default == True
-                                    )  # noqa: E712
+                                        ColorCatalogEntry.is_default == True  # noqa: E712
+                                    )
                                 )
                                 for hex_color, color_name in cat_result:
                                     h = hex_color.replace("#", "").lower()[:6]
