@@ -384,8 +384,9 @@ class VirtualPrinterInstance:
                         if self.queue_force_color_match:
                             # Build hex→color_name from the color catalog for human-readable
                             # waiting reasons in the scheduler (avoids "Waiting on PLA (#F4A925)").
-                            from sqlalchemy import select as sa_select
-                            from backend.app.models.color_catalog import ColorCatalogEntry
+                            from sqlalchemy import select as sa_select  # noqa: PLC0415
+
+                            from backend.app.models.color_catalog import ColorCatalogEntry  # noqa: PLC0415
                             hex_lower_set = {
                                 r.get("color", "").replace("#", "").lower()[:6]
                                 for r in requirements
