@@ -270,8 +270,8 @@ export function FilamentMapping({
                   <AlertTriangle className="w-3 h-3 text-orange-400" />
                 </span>
               )}
-              {/* Force color match checkbox — shown for type_only (color mismatch) slots when the parent passes the handlers */}
-              {onForceColorMatchChange && item.status === 'type_only' && item.slot_id != null && (
+              {/* Force color match checkbox — shown for type_only slots, or any slot that already has force_color_match stored (so it can always be unchecked) */}
+              {onForceColorMatchChange && item.slot_id != null && (item.status === 'type_only' || forceColorMatch?.[item.slot_id]) && (
                 <div className="col-span-5 flex items-center gap-1.5 ml-5 mt-0.5">
                   <input
                     type="checkbox"
