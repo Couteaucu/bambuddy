@@ -79,3 +79,35 @@ jobs:
             }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max,ignore-error=true
+
+      - name: Checkout Swarm repository
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v6
+        with:
+          repository: Revision/Swarm
+          token: ${{ secrets.TOKEN }}
+          path: swarm
+
+      - name: Update Swarm Bambuddy tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          set -euo pipefail
+
+          file="swarm/services/prod/bambuddy/base/deployment.yaml"
+          git -C swarm config user.name "Gitea Actions"
+          git -C swarm config user.email "actions@gitea.revisionnet.net"
+          git -C swarm checkout main
+          git -C swarm pull --ff-only origin main
+
+          sed -i -E "s|^([[:space:]]*image:[[:space:]]*gitea\.revisionnet\.net/revision/bambuddy:).*|\1${IMAGE_TAG}|" "$file"
+
+          if git -C swarm diff --quiet -- "$file"; then
+            echo "Swarm already points to ${IMAGE_TAG}; no update needed"
+            exit 0
+          fi
+
+          git -C swarm add "$file"
+          git -C swarm commit -m "chore: RNET-676 bump bambuddy to ${IMAGE_TAG}"
+          git -C swarm push origin main
