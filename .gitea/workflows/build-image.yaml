@@ -27,8 +27,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-tags: true
 
       - name: Determine image tag
         id: tag
@@ -36,6 +34,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             input_tag="${{ github.event.inputs.tag }}"
             if [ -z "$input_tag" ]; then
+              git fetch --tags
               latest=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)
               input_tag="${latest#v}"
             fi
