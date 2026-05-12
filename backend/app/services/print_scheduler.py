@@ -224,10 +224,21 @@ class PrintScheduler:
                                     )
                                     continue
                                 elif item.waiting_reason and "Waiting on" in item.waiting_reason:
+                                    # Colors now match — clear the waiting reason
+                                    item.waiting_reason = None
+                                    await db.commit()
+                            else:
+                                # No force_color_match slots — clear any stale waiting reason
+                                if item.waiting_reason and "Waiting on" in item.waiting_reason:
                                     item.waiting_reason = None
                                     await db.commit()
                         except (json.JSONDecodeError, Exception):
                             pass
+                    else:
+                        # No filament overrides at all — clear any stale waiting reason
+                        if item.waiting_reason and "Waiting on" in item.waiting_reason:
+                            item.waiting_reason = None
+                            await db.commit()
 
                     # Specific printer assignment (existing behavior)
                     if item.printer_id in busy_printers:
