@@ -11,6 +11,10 @@ on:
       tag:
         description: 'Image tag to build (e.g. 0.2.4-rnet.1) — leave blank to reuse the latest rnet tag'
         required: false
+      notes:
+        description: 'Changelog notes for this build (shown in Gitea release)'
+        required: false
+        default: ''
 
 env:
   REGISTRY: gitea.revisionnet.net
@@ -79,6 +83,25 @@ jobs:
             }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max,ignore-error=true
+
+      - name: Create release with build notes
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.notes != ''
+        env:
+          NOTES: ${{ github.event.inputs.notes }}
+          TOKEN: ${{ secrets.TOKEN }}
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          payload=$(jq -n \
+            --arg tag "v${IMAGE_TAG}" \
+            --arg name "v${IMAGE_TAG}" \
+            --arg body "$NOTES" \
+            --arg sha "$GITHUB_SHA" \
+            '{tag_name: $tag, name: $name, body: $body, draft: false, prerelease: true, target_commitish: $sha}')
+          curl -sf -X POST \
+            -H "Authorization: token $TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://${{ env.REGISTRY }}/api/v1/repos/${{ github.repository }}/releases" \
+            -d "$payload" || echo "Release creation failed (tag may already exist), continuing"
 
       - name: Checkout Swarm repository
         if: github.event_name == 'workflow_dispatch'
