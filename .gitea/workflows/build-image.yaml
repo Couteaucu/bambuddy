@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Image tag to build (e.g. 0.2.4-dev.1) — leave blank to reuse the latest rnet tag'
+        description: 'Image tag to build (e.g. 0.2.4-rnet.1) — leave blank to reuse the latest rnet tag'
         required: false
 
 env:
@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-tags: true
 
       - name: Determine image tag
         id: tag
@@ -36,6 +38,10 @@ jobs:
             if [ -z "$input_tag" ]; then
               latest=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)
               input_tag="${latest#v}"
+            fi
+            if [ -z "$input_tag" ]; then
+              echo "ERROR: no tag input and no existing rnet git tags found" >&2
+              exit 1
             fi
             echo "value=${input_tag}" >> "$GITHUB_OUTPUT"
             echo "push_latest=false" >> "$GITHUB_OUTPUT"
