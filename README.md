@@ -18,7 +18,8 @@
   <a href="https://github.com/maziggy/bambuddy/stargazers"><img src="https://img.shields.io/github/stars/maziggy/bambuddy?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/maziggy/bambuddy/issues"><img src="https://img.shields.io/github/issues/maziggy/bambuddy?style=flat-square" alt="Issues"></a>
   <a href="https://discord.gg/aFS3ZfScHM"><img src="https://img.shields.io/discord/1461241694715645994?style=flat-square&logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Discord"></a>
-  <a href="https://forum.bambuddy.cool"><img src="https://img.shields.io/badge/Forum-bambuddy.cool-00adef?style=flat-square&logo=discourse&logoColor=white" alt="Forum"></a>
+  <a href="https://github.com/sponsors/maziggy"><img src="https://img.shields.io/badge/GitHub_Sponsors-Sponsor-ea4aaa?style=flat-square&logo=github-sponsors&logoColor=white" alt="GitHub Sponsors"></a>
+  <a href="https://sponsors.bambuddy.cool"><img src="https://img.shields.io/badge/Sponsors_Portal-sponsors.bambuddy.cool-2dd4bf?style=flat-square&logo=heart&logoColor=white" alt="Sponsors Portal"></a>
   <a href="https://ko-fi.com/maziggy"><img src="https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat-square&logo=ko-fi&logoColor=white" alt="Ko-fi" target=_blank></a>
 </p>
 
@@ -28,7 +29,6 @@
   <a href="#-screenshots">Screenshots</a> •
   <a href="#-quick-start">Quick Start</a> •
   <a href="http://wiki.bambuddy.cool">Documentation</a> •
-  <a href="https://forum.bambuddy.cool">Forum</a> •
   <a href="https://discord.gg/aFS3ZfScHM">Discord</a> •
   <a href="#-contributing">Contributing</a>
 </p>
@@ -43,21 +43,27 @@
 
 ---
 
-## 📣 Contributors Wanted — Help Shape Bambuddy
+## 📰 As Featured In
 
-Bambuddy is a community-driven project and I'm **actively looking for contributors** — especially for two areas I can't cover alone:
+> **"Bambuddy is the companion app that Bambu Lab should have built from day one."**
+> — Adam Conway, [XDA-Developers](https://www.xda-developers.com/finally-have-full-control-bambu-lab-printer-ditched-bambu-cloud/)
 
-- 📝 **Documentation writers** — help improve the wiki, guides, and feature docs so new users have a smooth onboarding
-- ⚙️ **Discourse admin** — our **Discourse forum** is now live at [forum.bambuddy.cool](https://forum.bambuddy.cool) but still needs to be configured, themed, and tuned (categories, permissions, SSO, email, plugins, backups). If you know Discourse or want to dig in, I'd love your help.
-- 💬 **Forum moderators** — help welcome newcomers, answer questions, and keep discussions healthy on the new forum
+<p align="center">
+  <a href="https://www.xda-developers.com/finally-have-full-control-bambu-lab-printer-ditched-bambu-cloud/"><img src="https://img.shields.io/badge/XDA--Developers-Read-C8102E?style=flat-square" alt="XDA-Developers"></a>
+  <a href="https://www.howtogeek.com/free-your-bambu-lab-3d-printer-from-the-cloud/"><img src="https://img.shields.io/badge/How--To%20Geek-Read-33A6CA?style=flat-square" alt="How-To Geek"></a>
+  <a href="https://www.fabbaloo.com/news/bambuddy-launches-as-open-source-alternative-to-bambu-labs-cloud"><img src="https://img.shields.io/badge/Fabbaloo-Read-F77B0F?style=flat-square" alt="Fabbaloo"></a>
+  <a href="https://www.igorslab.de/en/bambuddy-the-silent-alternative-to-the-bamboo-cloud/"><img src="https://img.shields.io/badge/Igor's%20Lab-Read-E10000?style=flat-square" alt="Igor's Lab"></a>
+  <a href="https://3druck.com/en/programs/bambuddy-open-source-tool-replaces-bambu-cloud-for-management-and-automation-of-3d-print-jobs-38153226/"><img src="https://img.shields.io/badge/3Druck-Read-0080C0?style=flat-square" alt="3Druck"></a>
+  <a href="https://www.fastblinker.com/bambuddy-the-open-source-solution-thats-revolutionizing-bambu-lab-3d-printer-management/"><img src="https://img.shields.io/badge/FastBlinker-Read-00B0FF?style=flat-square" alt="FastBlinker"></a>
+</p>
 
-You don't need to be a developer for the docs or moderator roles. If you enjoy writing, helping others, or keeping a community friendly, you're exactly who we're looking for.
+Two leading 3D-printing publications independently concluded that Bambuddy's feature set **already exceeds Bambu's own cloud**:
 
-**Get in touch:**
-- 🗣️ [Forum](https://forum.bambuddy.cool) — chats, longer discussions, guides, and community Q&A
-- 💬 [Discord](https://discord.gg/aFS3ZfScHM) — fastest way to chat
-- 🐙 [GitHub Discussions](https://github.com/maziggy/bambuddy/discussions) — open a thread
-- 📧 **martin@bambuddy.cool** — email Martin directly (no GitHub or Discord needed)
+> *"The features seem to exceed those provided by Bambu Lab's own cloud."* — [Fabbaloo](https://www.fabbaloo.com/news/bambuddy-launches-as-open-source-alternative-to-bambu-labs-cloud)
+>
+> *"The list of functions seems so extensive that it even goes beyond what Bambu Lab offers in its own cloud."* — [3Druck.com](https://3druck.com/en/programs/bambuddy-open-source-tool-replaces-bambu-cloud-for-management-and-automation-of-3d-print-jobs-38153226/)
+
+📄 **[See all press coverage →](https://bambuddy.cool/press.html)**
 
 ---
 
@@ -70,7 +76,7 @@ You don't need to be a developer for the docs or moderator roles. If you enjoy w
 **Print from anywhere in the world** — Bambuddy's new Proxy Mode acts as a secure relay between your slicer and printer:
 
 - 🔒 **End-to-end TLS encryption** — FTP, file transfer, and camera are transparently proxied with the printer's real TLS certificate
-- 🛡️ **Optional Tailscale integration** — per-VP toggle + Docker socket mount surface the host's Tailscale IP on the VP card, so you know which `100.x.x.x` to paste into the slicer when you want a virtual printer reachable over your tailnet ([setup](https://wiki.bambuddy.cool/features/virtual-printer/)). Bambuddy's self-signed CA import is still required for the slicer side — the Bambu Studio / OrcaSlicer printer-MQTT trust path uses a bundled BBL CA, not the system trust store, so even a publicly-trusted cert wouldn't help. Tailscale's role is the private tunnel (reachability from anywhere, no port forwarding), not cert-import elimination.
+- 🛡️ **Optional Tailscale integration** — per-VP toggle + Docker socket mount surface the host's Tailscale IP on the VP card, so you know which `100.x.x.x` to paste into the slicer when you want a virtual printer reachable over your tailnet ([setup](https://wiki.bambuddy.cool/features/virtual-printer/)). Bambuddy's self-signed CA import is still required on the slicer side: Bambu Studio / OrcaSlicer validate printer TLS against a bundled BBL CA (not the system trust store), **and** their Add Printer dialog is IP-only (no hostname to match an LE cert against), so a publicly-trusted cert can't help on either dimension. Tailscale's role is the private tunnel (reachability from anywhere, no port forwarding), not cert-import elimination.
 - 🌍 **No cloud dependency** — Direct connection through your own Bambuddy server
 - 🔑 **Uses printer's access code** — No additional credentials needed
 - ⚡ **Full-speed printing** — Transparent TCP proxy, only MQTT is decrypted for IP rewriting
@@ -121,6 +127,7 @@ Optional but recommended — drop the [`slicer-api/` Compose stack](slicer-api/R
 - Plate thumbnail browsing for multi-plate archives (hover to navigate between plates)
 - Archive comparison (side-by-side diff)
 - Tag management (rename/delete across all archives)
+- **Per-archive print history** — Each archive card shows an `N prints` badge whenever a model has been printed more than once (reprint + failed retries all counted). Click the badge for the full per-archive Print Log — every individual run with date, status, duration, filament used, cost, and failure reason. Reprints contribute new rows so a failed retry never overwrites the source archive's data — the original 100 g successful print stays visible alongside the 10 g failed reprint, and Quick Stats add up to 110 g across both events.
 - **Print Log** — Chronological table view of all print activity with columns for date/time, print name, printer, user, status, duration, and filament. Filterable by search, printer, user, status, and date range. Pagination with configurable page size. Clear button removes log entries without affecting archives.
 
 ### 📊 Monitoring & Control
@@ -679,16 +686,14 @@ Full documentation available at **[wiki.bambuddy.cool](http://wiki.bambuddy.cool
 
 ## 🤝 Contributing
 
-Contributions welcome! **I'm especially looking for help with documentation and our new [Discourse forum](https://forum.bambuddy.cool)** — see [Contributors Wanted](#-contributors-wanted--help-shape-bambuddy) above. Other ways to help:
+Contributions welcome! Ways to help:
 
 1. **📝 Document** — Improve the wiki and guides *(urgently needed!)*
-2. **⚙️ Admin Discourse** — Help configure and tune the [forum](https://forum.bambuddy.cool) *(urgently needed!)*
-3. **💬 Moderate** — Welcome newcomers and keep [forum](https://forum.bambuddy.cool) discussions healthy *(urgently needed!)*
-4. **Test** — Report issues with your printer model
-5. **Translate** — Add new languages
-6. **Code** — Submit PRs for bugs or features
+2. **Test** — Report issues with your printer model
+3. **Translate** — Add new languages
+4. **Code** — Submit PRs for bugs or features
 
-Not sure where to start? Reach out on [Discord](https://discord.gg/aFS3ZfScHM), post on the [forum](https://forum.bambuddy.cool), or email **martin@bambuddy.cool** — I'll help you find something that fits.
+Not sure where to start? Reach out on [Discord](https://discord.gg/aFS3ZfScHM) or email **martin@bambuddy.cool** — I'll help you find something that fits.
 
 ```bash
 # Development setup
@@ -723,14 +728,20 @@ AGPL-3.0 License — see [LICENSE](LICENSE) for details.
 
 ---
 
-If you like Bambuddy and want to support it, you can <a href="https://ko-fi.com/maziggy" target=_blank>buy Martin a coffee</a>.
+## 💖 Support Bambuddy
+
+Bambuddy stays independent because real people support it directly. If Bambuddy makes your printers more useful, please consider:
+
+- **[GitHub Sponsors](https://github.com/sponsors/maziggy)** — five recurring tiers from $5/mo (Backer) to $500/mo (Corporate). Supporter+ ($15/mo) get access to a private sponsors space with a monthly newsletter and early release notes. Patron+ ($35/mo) vote on the quarterly roadmap. Sustaining Sponsor+ ($150/mo) get a direct async email line for technical questions (~2-3 business days). Corporate ($500/mo) get priority email response (next business day), README header logo, sitewide footer logo on [bambuddy.cool](https://bambuddy.cool), and [Press page](https://bambuddy.cool/press.html) placement.
+- **[Ko-fi](https://ko-fi.com/maziggy)** — one-time tip or recurring.
+
+Sponsors get listed in [BACKERS.md](BACKERS.md). Need commercial support (SLA, multi-printer consulting)? Email `martin@bambuddy.cool`.
 
 ---
 
 <p align="center">
   Made with ❤️ for the 3D printing community
   <br><br>
-  <a href="https://forum.bambuddy.cool">Forum</a> •
   <a href="https://discord.gg/aFS3ZfScHM">Join our Discord</a> •
   <a href="https://github.com/maziggy/bambuddy/issues">Report Bug</a> •
   <a href="https://github.com/maziggy/bambuddy/issues">Request Feature</a> •
