@@ -18,8 +18,6 @@ from backend.app.models.print_queue import PrintQueueItem
 from backend.app.models.printer import Printer
 from backend.app.models.settings import Settings
 from backend.app.models.smart_plug import SmartPlug
-from backend.app.models.spool import Spool
-from backend.app.models.spool_assignment import SpoolAssignment
 from backend.app.services.bambu_ftp import (
     cache_3mf_download,
     delete_file_async,
@@ -871,11 +869,6 @@ class PrintScheduler:
         # Check if user prefers lowest remaining filament when multiple spools match
         prefer_lowest = await self._get_bool_setting(db, "prefer_lowest_filament")
 
-        # When prefer_lowest is set, overwrite MQTT remain with inventory fill levels so
-        # the scheduler uses the same source the UI displays (inventory > AMS MQTT).
-        if prefer_lowest:
-            await self._enrich_remain_from_inventory(db, printer_id, loaded_filaments)
-
         # Compute mapping: match required filaments to available slots
         return self._match_filaments_to_slots(filament_reqs, loaded_filaments, prefer_lowest)
 
@@ -977,63 +970,6 @@ class PrintScheduler:
                 )
 
         return filaments
-
-    async def _enrich_remain_from_inventory(
-        self, db: AsyncSession, printer_id: int, loaded_filaments: list[dict]
-    ) -> None:
-        """Overwrite each slot's ``remain`` with the inventory-computed fill level.
-
-        Called only when ``prefer_lowest_filament`` is set so the scheduler sorts by
-        the same fill level the UI shows (Spoolman → inventory → AMS MQTT).  Slots
-        without an inventory assignment are left unchanged (MQTT remain as fallback).
-
-        Fill formula (mirrors PrintersPage fill chain):
-        - If ``last_scale_weight`` is set: ``(last_scale_weight - core_weight) / label_weight``
-        - Otherwise: ``(label_weight - weight_used - core_weight) / label_weight``
-        """
-        result = await db.execute(
-            select(SpoolAssignment, Spool)
-            .join(Spool, SpoolAssignment.spool_id == Spool.id)
-            .where(SpoolAssignment.printer_id == printer_id)
-        )
-        rows = result.all()
-
-        # Build lookup: (ams_id, tray_id) → Spool
-        assignment_map: dict[tuple[int, int], Spool] = {}
-        for assignment, spool in rows:
-            assignment_map[(assignment.ams_id, assignment.tray_id)] = spool
-
-        if not assignment_map:
-            return
-
-        for filament in loaded_filaments:
-            key = (filament["ams_id"], filament["tray_id"])
-            spool = assignment_map.get(key)
-            if spool is None:
-                continue
-
-            label_weight = spool.label_weight or 0
-            if label_weight <= 0:
-                continue
-
-            core_weight = spool.core_weight or 0
-
-            if spool.last_scale_weight is not None:
-                remaining_g = spool.last_scale_weight - core_weight
-            else:
-                remaining_g = label_weight - (spool.weight_used or 0) - core_weight
-
-            inventory_fill = max(0, round(remaining_g / label_weight * 100))
-            old_remain = filament["remain"]
-            filament["remain"] = inventory_fill
-            logger.debug(
-                "prefer_lowest enrichment: printer %s ams=%s tray=%s MQTT remain=%s → inventory fill=%s%%",
-                printer_id,
-                filament["ams_id"],
-                filament["tray_id"],
-                old_remain,
-                inventory_fill,
-            )
 
     def _normalize_color(self, color: str | None) -> str:
         """Normalize color to #RRGGBB format."""
@@ -1167,27 +1103,6 @@ class PrintScheduler:
                         type_only_match = f
 
             match = idx_match or exact_match or similar_match or type_only_match
-            if prefer_lowest:
-                candidates = [{"tray": f["global_tray_id"], "remain": f.get("remain", -1)} for f in available]
-                winner_tray = match["global_tray_id"] if match else None
-                match_kind = (
-                    "idx"
-                    if idx_match
-                    else "exact"
-                    if exact_match
-                    else "similar"
-                    if similar_match
-                    else "type_only"
-                    if type_only_match
-                    else "none"
-                )
-                logger.info(
-                    "prefer_lowest: slot %s candidates=%s → picked tray %s (%s)",
-                    req.get("slot_id"),
-                    candidates,
-                    winner_tray,
-                    match_kind,
-                )
             if match:
                 used_tray_ids.add(match["global_tray_id"])
                 comparisons.append({"slot_id": req.get("slot_id", 0), "global_tray_id": match["global_tray_id"]})
