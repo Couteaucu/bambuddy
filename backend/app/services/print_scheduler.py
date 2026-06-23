@@ -216,6 +216,47 @@ class PrintScheduler:
                     continue
 
                 if item.printer_id:
+                    # Force color match: check BEFORE busy/idle so waiting_reason is set
+                    # even while the printer is printing something else.  This ensures the
+                    # item immediately shows "Waiting on …" in the UI rather than plain
+                    # "pending" until the current job finishes.
+                    if item.filament_overrides:
+                        try:
+                            _fo_early = json.loads(item.filament_overrides)
+                            _force_early = [o for o in _fo_early if o.get("force_color_match")]
+                            if _force_early:
+                                _missing_early = self._get_missing_force_color_slots(item.printer_id, _force_early)
+                                if _missing_early:
+                                    _reason_early = (
+                                        f"No matching material/color. Waiting on {', '.join(_missing_early)}"
+                                    )
+                                    if item.waiting_reason != _reason_early:
+                                        item.waiting_reason = _reason_early
+                                        await db.commit()
+                                    logger.debug(
+                                        "Queue item %s: force-color hold on printer %s — %s",
+                                        item.id,
+                                        item.printer_id,
+                                        _missing_early,
+                                    )
+                                    continue
+                                elif item.waiting_reason and "Waiting on" in item.waiting_reason:
+                                    # Colors now match — clear the waiting reason
+                                    item.waiting_reason = None
+                                    await db.commit()
+                            else:
+                                # No force_color_match slots — clear any stale waiting reason
+                                if item.waiting_reason and "Waiting on" in item.waiting_reason:
+                                    item.waiting_reason = None
+                                    await db.commit()
+                        except (json.JSONDecodeError, Exception):
+                            pass
+                    else:
+                        # No filament overrides at all — clear any stale waiting reason
+                        if item.waiting_reason and "Waiting on" in item.waiting_reason:
+                            item.waiting_reason = None
+                            await db.commit()
+
                     # Specific printer assignment (existing behavior)
                     if item.printer_id in busy_printers:
                         continue
@@ -684,10 +725,11 @@ class PrintScheduler:
             List of ``"TYPE (color)"`` strings for unmatched slots (empty list means all match).
         """
         status = printer_manager.get_status(printer_id)
+
         if not status:
             return [f"{o.get('type', '?')} ({o.get('color_name') or o.get('color', '?')})" for o in force_overrides]
 
-        # Build set of loaded type+colour pairs from AMS and external spool
+        # Build set of loaded type+colour pairs from this printer's AMS
         loaded: set[tuple[str, str]] = set()
         for ams_unit in status.raw_data.get("ams", []):
             for tray in ams_unit.get("tray", []):

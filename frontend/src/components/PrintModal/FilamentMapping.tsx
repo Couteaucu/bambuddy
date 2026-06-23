@@ -43,7 +43,7 @@ export function FilamentMapping({
   });
 
   const { loadedFilaments, filamentComparison, hasTypeMismatch, hasColorMismatch } =
-    useFilamentMapping(filamentReqs, printerStatus, manualMappings);
+    useFilamentMapping(filamentReqs, printerStatus, manualMappings, undefined, forceColorMatch);
 
   // Per-slot sub-brand + material-disambiguated colour labels (#1718). Same
   // shared hook the model-mode FilamentOverride uses so both panels render
@@ -308,6 +308,21 @@ export function FilamentMapping({
                   <Palette className="w-3 h-3" />
                   {t('printModal.forceColorMatch')}
                 </label>
+              )}
+              {/* Force color match checkbox — shown for type_only slots, or any slot that already has force_color_match stored (so it can always be unchecked) */}
+              {onForceColorMatchChange && item.slot_id != null && (item.status === 'type_only' || forceColorMatch?.[item.slot_id]) && (
+                <div className="col-span-5 flex items-center gap-1.5 ml-5 mt-0.5">
+                  <input
+                    type="checkbox"
+                    id={`fcm-${item.slot_id}`}
+                    checked={forceColorMatch?.[item.slot_id] ?? false}
+                    onChange={(e) => onForceColorMatchChange(item.slot_id!, e.target.checked)}
+                    className="w-3 h-3 accent-bambu-green cursor-pointer"
+                  />
+                  <label htmlFor={`fcm-${item.slot_id}`} className="text-[10px] text-bambu-gray cursor-pointer select-none">
+                    {t('printModal.forceColorMatch')}
+                  </label>
+                </div>
               )}
             </div>
             );

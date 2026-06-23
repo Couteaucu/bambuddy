@@ -1,0 +1,144 @@
+---
+name: Build BamBuddy Image
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to build (e.g. 0.2.4-rnet.1) — leave blank to reuse the latest rnet tag'
+        required: false
+      notes:
+        description: 'Changelog notes for this build (shown in Gitea release)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: gitea.revisionnet.net
+  IMAGE: gitea.revisionnet.net/revision/bambuddy
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'upstream/v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            input_tag="${{ github.event.inputs.tag }}"
+            if [ -z "$input_tag" ]; then
+              git fetch --tags
+              latest=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)
+              input_tag="${latest#v}"
+            fi
+            if [ -z "$input_tag" ]; then
+              echo "ERROR: no tag input and no existing rnet git tags found" >&2
+              exit 1
+            fi
+            echo "value=${input_tag}" >> "$GITHUB_OUTPUT"
+            echo "push_latest=false" >> "$GITHUB_OUTPUT"
+          else
+            branch="${{ github.event.pull_request.head.ref }}"
+            version="${branch#upstream/v}"
+            git config user.name "Gitea Actions"
+            git config user.email "actions@gitea.revisionnet.net"
+            git tag "v${version}-rnet.1"
+            git push origin "v${version}-rnet.1"
+            echo "value=${version}-rnet.1" >> "$GITHUB_OUTPUT"
+            echo "push_latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Gitea Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          provenance: false
+          sbom: false
+          tags: >-
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}${{
+              steps.tag.outputs.push_latest == 'true' && format(',{0}:latest', env.IMAGE) || ''
+            }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max,ignore-error=true
+
+      - name: Create release with build notes
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.notes != ''
+        env:
+          NOTES: ${{ github.event.inputs.notes }}
+          TOKEN: ${{ secrets.TOKEN }}
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          payload=$(jq -n \
+            --arg tag "v${IMAGE_TAG}" \
+            --arg name "v${IMAGE_TAG}" \
+            --arg body "$NOTES" \
+            --arg sha "$GITHUB_SHA" \
+            '{tag_name: $tag, name: $name, body: $body, draft: false, prerelease: true, target_commitish: $sha}')
+          curl -sf -X POST \
+            -H "Authorization: token $TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://${{ env.REGISTRY }}/api/v1/repos/${{ github.repository }}/releases" \
+            -d "$payload" || echo "Release creation failed (tag may already exist), continuing"
+
+      - name: Checkout Swarm repository
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v6
+        with:
+          repository: Revision/Swarm
+          token: ${{ secrets.TOKEN }}
+          path: swarm
+
+      - name: Update Swarm Bambuddy tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          set -euo pipefail
+
+          cd swarm
+          git config user.name "Gitea Actions"
+          git config user.email "actions@gitea.revisionnet.net"
+          git checkout main
+          git pull --ff-only origin main
+
+          file="services/prod/bambuddy/base/deployment.yaml"
+          sed -i -E "s|^([[:space:]]*image:[[:space:]]*gitea\.revisionnet\.net/revision/bambuddy:).*|\1${IMAGE_TAG}|" "$file"
+
+          if ! grep -q "revision/bambuddy:${IMAGE_TAG}" "$file"; then
+            echo "ERROR: sed did not match image line in $file" >&2
+            grep "bambuddy" "$file" >&2
+            exit 1
+          fi
+
+          if git diff --quiet -- "$file"; then
+            echo "Swarm already points to ${IMAGE_TAG}; no update needed"
+            exit 0
+          fi
+
+          git add "$file"
+          git commit -m "chore: RNET-676 bump bambuddy to ${IMAGE_TAG}"
+          git push origin main
+          echo "Swarm updated to ${IMAGE_TAG}"

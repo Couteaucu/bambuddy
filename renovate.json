@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>Renovate/Renovate",
+    "config:recommended"
+  ],
+  "enabledManagers": ["custom.regex"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track upstream maziggy/bambuddy stable releases via APP_VERSION in config.py",
+      "managerFilePatterns": [
+        "/(^|/)backend/app/core/config\\.py$/"
+      ],
+      "matchStrings": [
+        "APP_VERSION = \"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "maziggy/bambuddy",
+      "versioningTemplate": "loose"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "maziggy/bambuddy — automerge all updates; review happens at upstream-sync PR, not here",
+      "matchPackageNames": ["maziggy/bambuddy"],
+      "allowedVersions": "/^[0-9]+\\.[0-9]+(\\.[0-9]+)*$/",
+      "automerge": true
+    }
+  ]
+}
