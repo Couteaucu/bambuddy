@@ -998,8 +998,8 @@ class TestVirtualPrinterInstance:
         assert queue_item.filament_overrides is not None
         overrides = json.loads(queue_item.filament_overrides)
         assert overrides == [
-            {"slot_id": 1, "type": "PLA", "color": "#FFFFFF", "force_color_match": True},
-            {"slot_id": 2, "type": "PLA", "color": "#FF00FF", "force_color_match": True},
+            {"slot_id": 1, "type": "PLA", "color": "#FFFFFF", "color_name": None, "force_color_match": True},
+            {"slot_id": 2, "type": "PLA", "color": "#FF00FF", "color_name": None, "force_color_match": True},
         ]
         # required_filament_types still populated alongside overrides.
         assert json.loads(queue_item.required_filament_types) == ["PLA"]
@@ -1514,6 +1514,7 @@ class TestVirtualPrinterManager:
             "remote_interface_ip": "",
             "target_printer_id": None,
             "auto_dispatch": True,
+            "queue_force_color_match": False,
             "tailscale_disabled": True,  # Opt-in default (#1070 UX fix)
             "queue_force_color_match": False,  # default — must be explicit so MagicMock truthiness doesn't trip the change detector
             "position": 0,

@@ -1,0 +1,95 @@
+---
+name: upstream-sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  upstream-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine whether sync is needed
+        id: decide
+        run: |
+          version=$(grep 'APP_VERSION' backend/app/core/config.py | grep -oP '"\K[^"]+')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          if git ls-remote --exit-code origin "refs/heads/upstream/v${version}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "upstream/v${version} branch already exists — skipping"
+            exit 0
+          fi
+
+          git remote add upstream https://github.com/maziggy/bambuddy.git
+          git fetch upstream "refs/tags/v${version}:refs/tags/v${version}"
+
+          if git merge-base --is-ancestor "v${version}" HEAD; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "upstream v${version} already present in main — skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create upstream branch
+        id: branch
+        if: steps.decide.outputs.skip == 'false'
+        run: |
+          version="${{ steps.decide.outputs.version }}"
+          git config user.name "Gitea Actions"
+          git config user.email "actions@gitea.revisionnet.net"
+          git checkout -b "upstream/v${version}"
+          git merge --no-edit "v${version}" || true
+
+          if [ -f .git/MERGE_HEAD ]; then
+            # Merge left conflicts — check which files
+            conflicts=$(git diff --name-only --diff-filter=U)
+            non_lockfile=$(echo "$conflicts" | grep -v '^frontend/package-lock\.json$' || true)
+
+            if [ -z "$non_lockfile" ]; then
+              # Only package-lock.json conflicted — take upstream's and continue
+              git checkout --theirs frontend/package-lock.json
+              git add frontend/package-lock.json
+              git commit --no-edit
+              echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            else
+              # Real code conflicts — abort, reset branch to upstream tag
+              git merge --abort
+              git reset --hard "v${version}"
+              echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          git push origin "upstream/v${version}"
+
+      - name: Open pull request
+        if: steps.decide.outputs.skip == 'false'
+        run: |
+          version="${{ steps.decide.outputs.version }}"
+
+          if [ "${{ steps.branch.outputs.has_conflicts }}" = "true" ]; then
+            title="chore: merge upstream v${version} (conflicts)"
+            body="Upstream merge of [maziggy/bambuddy](https://github.com/maziggy/bambuddy) v${version}.\n\n⚠️ Real merge conflicts detected — resolve locally before merging."
+          else
+            title="chore: merge upstream v${version}"
+            body="Upstream merge of [maziggy/bambuddy](https://github.com/maziggy/bambuddy) v${version}.\n\nReview changes before merging."
+          fi
+
+          curl -sf -X POST \
+            "https://gitea.revisionnet.net/api/v1/repos/Revision/BamBuddy/pulls" \
+            -H "Authorization: token ${{ secrets.TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"title\": \"${title}\", \"head\": \"upstream/v${version}\", \"base\": \"main\", \"body\": \"${body}\"}"
