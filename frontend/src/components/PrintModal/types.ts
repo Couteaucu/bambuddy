@@ -194,6 +194,10 @@ export interface FilamentMappingProps {
   onManualMappingChange: (mappings: Record<number, number>) => void;
   currencySymbol: string;
   defaultCostPerKg: number;
+  /** Per-slot force color match flags. When set, a checkbox is shown next to each slot. */
+  forceColorMatch?: Record<number, boolean>;
+  /** Called when the user toggles force color match for a slot. */
+  onForceColorMatchChange?: (slotId: number, value: boolean) => void;
 }
 
 /**

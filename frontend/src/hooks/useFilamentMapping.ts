@@ -325,6 +325,7 @@ export function useFilamentMapping(
   printerStatus: PrinterStatus | undefined,
   manualMappings: Record<number, number>,
   preferLowest?: boolean,
+  forceColorMatch?: Record<number, boolean>,
 ): UseFilamentMappingResult {
   const loadedFilaments = useLoadedFilaments(printerStatus);
 
@@ -341,6 +342,9 @@ export function useFilamentMapping(
 
     return filamentReqs.filaments.map((req) => {
       const slotId = req.slot_id || 0;
+      // When force_color_match is on for this slot, require exact color — no fuzzy matching.
+      // This keeps the modal in sync with the scheduler which does strict hex comparison.
+      const strictColor = !!(forceColorMatch?.[slotId]);
 
       // Check if there's a manual override for this slot
       if (slotId > 0 && manualMappings[slotId] !== undefined) {
@@ -349,9 +353,10 @@ export function useFilamentMapping(
 
         if (manualLoaded) {
           const typeMatch = manualLoaded.type?.toUpperCase() === req.type?.toUpperCase();
-          const colorMatch =
-            normalizeColorForCompare(manualLoaded.color) === normalizeColorForCompare(req.color) ||
-            colorsAreSimilar(manualLoaded.color, req.color);
+          const colorMatch = strictColor
+            ? normalizeColorForCompare(manualLoaded.color) === normalizeColorForCompare(req.color)
+            : normalizeColorForCompare(manualLoaded.color) === normalizeColorForCompare(req.color) ||
+              colorsAreSimilar(manualLoaded.color, req.color);
 
           let status: FilamentStatus;
           if (typeMatch && colorMatch) {
@@ -377,6 +382,7 @@ export function useFilamentMapping(
       // Auto-match: Find a loaded filament
       // Priority: unique tray_info_idx match > exact color match > similar color match > type-only match
       // IMPORTANT: Exclude trays that are already assigned (manually or auto)
+      // When strictColor is set, tray_info_idx match is only valid if color also matches exactly.
       const reqTrayInfoIdx = req.tray_info_idx || '';
 
       // Get available trays (not already used)
@@ -404,7 +410,7 @@ export function useFilamentMapping(
       let typeOnlyMatch: LoadedFilament | undefined;
 
       // Check if tray_info_idx is unique among available trays
-      if (reqTrayInfoIdx) {
+      if (reqTrayInfoIdx && !strictColor) {
         const idxMatches = available.filter((f) => f.trayInfoIdx === reqTrayInfoIdx);
         if (idxMatches.length === 1) {
           // Unique tray_info_idx - use it as definitive match
@@ -468,8 +474,10 @@ export function useFilamentMapping(
 
       const hasFilament = !!loaded;
       const typeMatch = hasFilament;
-      // idxMatch is always considered a color match (same spool = same color)
-      const colorMatch = !!idxMatch || !!exactMatch || !!similarMatch;
+      // idxMatch is always considered a color match (same spool = same color), unless strictColor
+      const colorMatch = strictColor
+        ? !!exactMatch  // strict: only exact hex match counts
+        : !!idxMatch || !!exactMatch || !!similarMatch;
 
       // Status: match (tray_info_idx, type+color, or similar color), type_only (type ok, color very different), mismatch (type not found)
       let status: FilamentStatus;

@@ -549,11 +549,33 @@ class VirtualPrinterInstance:
                         if types:
                             required_filament_types_json = json.dumps(types)
                         if self.queue_force_color_match:
+                            # Build hex→color_name from the color catalog for human-readable
+                            # waiting reasons in the scheduler (avoids "Waiting on PLA (#F4A925)").
+                            from sqlalchemy import select as sa_select
+
+                            from backend.app.models.color_catalog import ColorCatalogEntry
+
+                            hex_lower_set = {
+                                r.get("color", "").replace("#", "").lower()[:6] for r in requirements if r.get("color")
+                            }
+                            catalog_map: dict[str, str] = {}
+                            if hex_lower_set:
+                                cat_result = await db.execute(
+                                    sa_select(ColorCatalogEntry.hex_color, ColorCatalogEntry.color_name).where(
+                                        ColorCatalogEntry.is_default.is_(True)
+                                    )
+                                )
+                                for hex_color, color_name in cat_result:
+                                    h = hex_color.replace("#", "").lower()[:6]
+                                    if h in hex_lower_set and h not in catalog_map:
+                                        catalog_map[h] = color_name
                             overrides = [
                                 {
                                     "slot_id": r["slot_id"],
                                     "type": r.get("type", ""),
                                     "color": r.get("color", ""),
+                                    "color_name": catalog_map.get(r.get("color", "").replace("#", "").lower()[:6])
+                                    or None,
                                     "force_color_match": True,
                                 }
                                 for r in requirements
