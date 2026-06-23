@@ -4,14 +4,14 @@ Bambuddy is sustainable thanks to people who put their money where their use is.
 
 If you'd like to support Bambuddy:
 
-- **GitHub Sponsors** (recurring, 5 tiers from $5/mo to $500/mo) — https://github.com/sponsors/maziggy
+- **GitHub Sponsors** (recurring, 5 tiers from $5/mo to $300/mo) — https://github.com/sponsors/maziggy
 - **Ko-fi** (one-time or recurring) — https://ko-fi.com/maziggy
 
 If you sponsor and your name isn't here within 48h, please write an email to martin@bambuddy.cool or open an Issue on the main repo.
 
 ---
 
-## Corporate Sponsors ($500/mo+)
+## Corporate Sponsors ($300/mo+)
 
 *None yet — be the first. Your logo on the bambuddy.cool homepage and press.html, plus co-marketing.*
 
@@ -32,6 +32,7 @@ If you sponsor and your name isn't here within 48h, please write an email to mar
 - [@sixfootseven](https://github.com/sixfootseven)
 - [@MethodicalMartian](https://github.com/MethodicalMartian)
 - [@jmclaren7](https://github.com/jmclaren7)
+- [@brianharwell](https://github.com/brianharwell)
 
 ## Backers ($5/mo+)
 
@@ -45,7 +46,9 @@ If you sponsor and your name isn't here within 48h, please write an email to mar
 - [@agntcoopersea](https://github.com/agntcoopersea)
 - [@PJMCL1618033](https://github.com/PJMCL1618033
 - [@mgf99](https://github.com/mgf99)
-
+- [@Geoff-S](https://github.com/Geoff-S)
+- [@andyspinball](https://github.com/andyspinball
+- [@avandeputte](https://github.com/avandeputte)
 ---
 
 ## One-time and historical supporters
